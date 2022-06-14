@@ -124,6 +124,7 @@ namespace Fusion_PDO
             }
             catch (Exception e)
             {
+
                 MessageBox.Show("No connection.", e.ToString());
             }
         }

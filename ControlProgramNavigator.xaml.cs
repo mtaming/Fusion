@@ -18,9 +18,18 @@ using System.Data.SqlClient;
 using System.IO;
 namespace Fusion_PDO
 {
-    /// <summary>
-    /// Interaction logic for ControlProgramNavigator.xaml
-    /// </summary>
+    /* Notions 
+
+ Need for Enhancement:
+
+  1. Do not use static values. Database connections parameters are dynamically changing. Always think through if the parameters will be dynamically changing or just static as user will define it. 
+  2. Use proper grammar and notifcation content. As much as possible do not use very technical jargons that ordinary users will not understand it. Use instruction or warning messages that users will easily understand what will be their next step. 
+  3.For message box follow uniform format MessageBox.Show("The Message", "Title", Button design, MessageBoxImage Icon)
+  4. Make sure to close sqlDataReader when opening it for a read. Anticapate if there is no data in the table. You should handle empty data.
+  5. Make sure to close database connection after use.
+  6. Use proper field name for better readability than the column index number. ex. reader[1].toString()  better for readability reader["MyFieldName"].
+                
+      */
     public partial class ControlProgramNavigator : UserControl
     {
         public ControlProgramNavigator()
@@ -33,6 +42,8 @@ namespace Fusion_PDO
 
         public void LoadDB()
         {
+
+            //!!! J Notation: Do not use static values. Database connections parameters are dynamically changing.
             connectionString = "Data Source=DESKTOP-KLRS7LV\\FUSION;Initial Catalog=Fusion_Database;User ID=FusionTester;Password=FusionTester1";
             conn = new SqlConnection(connectionString);
             try
@@ -45,6 +56,8 @@ namespace Fusion_PDO
             }
             catch (Exception ex)
             {
+                //!!! J Notation: Proper grammar and notification.
+                ////For message box follow uniform format MessageBox.Show("The Message", "Title", Button design, MessageBoxImage Icon)
                 MessageBox.Show("Can not open connection ! " + ex.ToString());
                 Application.Current.Shutdown();
             }
@@ -70,7 +83,7 @@ namespace Fusion_PDO
                 SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] WHERE id = " + condition + "  ORDER BY filename ASC", conn);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
-
+                //!!! J Notation:  Make sure to close sqlDataReader when opening it for a read. Anticapate if there is no data in the table. You should handle empty data.
                 reader.Read();
 
                 txtPath.Text = reader[8].ToString();
@@ -98,6 +111,7 @@ namespace Fusion_PDO
             }
             catch (Exception ex)
             {
+                //!!! J Notation:  Message box format to be used
                 MessageBox.Show("Error: " + ex.ToString());
             }
             finally
@@ -116,12 +130,13 @@ namespace Fusion_PDO
                 SqlCommand cmd = new SqlCommand("SELECT filename from [Fusion_Database].[dbo].[NCPROG] ORDER BY filename ASC", conn);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
-
+                //!!! J Notation:  Close sqldata reader. ANticapate when it retuns empty value.
                 dt.Load(reader);
 
             }
             catch (Exception ex)
             {
+                //!!! J Notation:  Message box format to be used
                 MessageBox.Show("Error: " + ex.ToString());
             }
             finally
@@ -136,13 +151,16 @@ namespace Fusion_PDO
         {
             try
             {
+
                 string id = GetDataDG().Rows[0]["id"].ToString();
+                //!!! J Notation:  Do not use static values
                 SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] WHERE id = " + id + " ORDER BY filename ASC", conn);
-                conn.Open();
+                conn.Open();   
+                //!!! J Notation:  Close sqldata reader. ANticapate when it retuns empty value.
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-
+                //!!! J Notation: Close SQL Reader and use proper field name for better readability than the column index number. 
                 txtPath.Text = reader[8].ToString();
                 txtReferenceId.Text = reader[1].ToString();
                 txtRemoteRequestId.Text = reader[2].ToString();
@@ -186,7 +204,7 @@ namespace Fusion_PDO
         {
             if (File.Exists(FilePath))
             {
-                return new FileInfo(FilePath).Length;
+                return new FileInfo(FilePath).Length;     //!!! J Notation: 
             }
             return 0;
         }
@@ -201,6 +219,7 @@ namespace Fusion_PDO
 
                 if (search_value != "")
                 {
+                    //!!! J Notation:  Remove all static values in the database connection string
                     SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] WHERE filename LIKE '%" + search_value + "%' ", conn);
                     conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader();

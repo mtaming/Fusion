@@ -53,7 +53,7 @@ namespace Fusion_PDO
 
         public void LoadDB()
         {
-
+            //!!! J Notation: Do not use static values. Database connections parameters are dynamically changing.
             connectionString = "Data Source=DESKTOP-KLRS7LV\\FUSION;Initial Catalog=Fusion_Database;User ID=FusionTester;Password=FusionTester1";
             conn = new SqlConnection(connectionString);
             try
@@ -153,6 +153,8 @@ namespace Fusion_PDO
             try
             {
                 string id = GetDataDG().Rows[0]["id"].ToString();
+
+                //!!! J Notation:  Make sure to close sqlDataReader when opening it for a read. Anticapate if there is no data in the table. You should handle empty data.
                 SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + id + "  ORDER BY filename ASC", conn);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
