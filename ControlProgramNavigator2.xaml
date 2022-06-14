@@ -1,0 +1,235 @@
+﻿<UserControl x:Class="Fusion_PDO.ControlProgramNavigator2"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialdesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:local="clr-namespace:Fusion_PDO"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1200">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="183.333"/>
+                <RowDefinition Height="66.667"/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="238*"/>
+                <RowDefinition Height="105*"/>
+                <RowDefinition Height="105*"/>
+            </Grid.RowDefinitions>
+
+
+
+            <Grid Grid.Column="0" Grid.Row="0" Height="250" Width="470" Grid.RowSpan="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="210"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Control Program Files" Margin="10,1" FontFamily="Helvetica" Foreground="White" FontWeight="Bold" />
+                    <DataGrid x:Name="dgProgramFiles" Grid.Row="1" Margin="10,0,10,0" AutoGenerateColumns="False" ColumnWidth="*" IsReadOnly="True" FontSize="12" CanUserAddRows="False" MouseLeftButtonUp="dgProgramFIles_leftClick" MouseDoubleClick="dpPrgramFileDoubleClick" KeyDown="dgProgramFilesKeyDown" >
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Id" Binding="{Binding id}" Visibility="Hidden"/>
+                            <DataGridTextColumn Header="Filename" Binding="{Binding filename}"/>
+                        </DataGrid.Columns>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu FontSize="11">
+                                <MenuItem Header="Archive and Assign New" Icon="{materialdesign:PackIcon Kind=ArchiveAdd}"/>
+                                <MenuItem Header="Archive and Edit" Icon="{materialdesign:PackIcon Kind=ArchiveEdit}"/>
+                                <MenuItem Header="Archive and Remove" Icon="{materialdesign:PackIcon Kind=ArchiveRemove}"/>
+                                <MenuItem Header="Edit File" Icon="{materialdesign:PackIcon Kind=Edit}" Click="ctxMenu_EditFile_Click" />
+                                <MenuItem Header="Lock and Unlock" Icon="{materialdesign:PackIcon Kind=Lock}"/>
+                                <MenuItem Header="Assign to Control Program Group" Icon="{materialdesign:PackIcon Kind=SettingsApplications}"/>
+                                <MenuItem Header="Remove Selected Control Program(s)" Icon="{materialdesign:PackIcon Kind=Remove}"/>
+                                <MenuItem Header="Send to Machine" Icon="{materialdesign:PackIcon Kind=FileSend}"/>
+                                <MenuItem Header="Simulate DNC using this File" Icon="{materialdesign:PackIcon Kind=Settings}"/>
+                                <MenuItem Header="Print Control Program" Icon="{materialdesign:PackIcon Kind=Printer}"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                    </DataGrid>
+                    <TextBlock x:Name="Loading" Text="Please Wait While Loading..." Margin="10,0,10,10" Grid.Row="1" Foreground="Black" TextAlignment="Center" VerticalAlignment="Center" FontSize="15" FontWeight="Bold"/>
+                    <ProgressBar Grid.Row="1" x:Name="ProgressBar1" Height="10" Margin="10,200,10,0" Visibility="Visible"/>
+
+                    <DataGrid x:Name="dgReferenceId" Grid.Row="1" Margin="10,0,10,0" AutoGenerateColumns="False" ColumnWidth="*" IsReadOnly="True" FontSize="12"  Visibility="Hidden" MouseDown="dgClickReference">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Id" Binding="{Binding id}" Visibility="Hidden"/>
+                            <DataGridTextColumn Header="REFID" Binding="{Binding UniqueReference}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DataGrid x:Name="dgRemoteRequestId" Grid.Row="1" Margin="10,0,10,0" AutoGenerateColumns="False" ColumnWidth="*" IsReadOnly="True" FontSize="12"  Visibility="Hidden" MouseDown="dgClickRemoteRequestId" >
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Id" Binding="{Binding id}" Visibility="Hidden"/>
+                            <DataGridTextColumn Header="DNCID" Binding="{Binding remoteCallId}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock x:Name="lblList" Grid.Row="3"  Margin="10,0" FontFamily="Helvetica" Foreground="White" FontWeight="Light" FontStyle="Italic"/>
+
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="50"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <!-- CONTROL PROGRAM FILENAME AND PATH -->
+                    <TextBlock Grid.Row="0" Text="Control Program Filename and Path" Foreground="White"/>
+                    <TextBox x:Name="txtPath" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Margin="55,20,0,0" Width="665" IsReadOnly="True">
+                        <TextBox.ContextMenu>
+                            <ContextMenu FontSize="11">
+                                <MenuItem Header="Copy Text"  Icon="{materialdesign:PackIcon Kind=ContentCopy}" Click="copyPathClick"/>
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+                    <Button Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,20,0,0" Width="50" Height="25" Click="btnControlProgram" ToolTip="View List by Control Program" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                        <materialdesign:PackIcon Kind="FileSearchOutline"/>
+                        
+                    </Button>
+
+                    <!-- DATA VIEW SELECTED FILE -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="19"/>
+                            <ColumnDefinition Width="18"/>
+                            <ColumnDefinition Width="413"/>
+                            <ColumnDefinition Width="148*"/>
+                            <ColumnDefinition Width="30*"/>
+                            <ColumnDefinition Width="103*"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- REFERENCE ID -->
+                        <Button  VerticalAlignment="Top" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,15,0,0" Click="btnReferenceId" Grid.ColumnSpan="3" ToolTip="View List by Reference ID" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                            <materialdesign:PackIcon Kind="FileSearchOutline"/>
+                        </Button>
+                        <TextBlock Text="Reference ID: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="18,20,0,0" Width="145" TextAlignment="Right" Grid.Column="2"/>
+                        <TextBox x:Name="txtReferenceId" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="240" Margin="163,15,0,0" IsReadOnly="True" Grid.Column="2"/>
+
+                        <!-- REMOTE REQUEST ID -->
+                        <Button VerticalAlignment="Top" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,50,0,0" Click="btnRemoteRequestId" Grid.ColumnSpan="3" ToolTip="View List by Remote Request ID" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                            <materialdesign:PackIcon Kind="FileSearchOutline"/>
+                        </Button>
+                        <TextBlock Text="Remote Request ID: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="18,55,0,0" Width="145" TextAlignment="Right" Grid.Column="2"/>
+                        <TextBox x:Name="txtRemoteRequestId" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="240" Margin="163,50,0,0" IsReadOnly="True" Grid.Column="2"/>
+
+                        <!-- CONTROL PROGRAM GROUP -->
+                        <Button x:Name="btnCntrlProgramGroup" VerticalAlignment="Top" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,85,0,0" Grid.ColumnSpan="3" Click="btnCProgram" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                            <materialdesign:PackIcon Kind="FileSearch"/>
+                        </Button>
+
+                        <TextBlock Text="Control Program Group: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="18,90,0,0" Width="145" TextAlignment="Right" Grid.Column="2"/>
+                        <TextBox x:Name="txtControlProgramGroup" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="240" Margin="163,85,0,0" IsReadOnly="True" Grid.Column="2" />
+                        <Button x:Name="btnCancel" VerticalAlignment="Top" HorizontalAlignment="Left" Width="50" Height="25" Margin="355,85,0,0"  Background="Red" Grid.Column="2" Visibility="Hidden" Click="btnCancelCPG">
+                            <materialdesign:PackIcon Kind="Close"/>
+                        </Button>
+
+
+                        <!-- ASSOCIATED CUSTOMERS -->
+                        <Button x:Name="btnAssocCustomer" VerticalAlignment="Top" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,120,0,0" Grid.ColumnSpan="3" Click="btnAssocCustomer_Click" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                            <materialdesign:PackIcon Kind="FileSearch"/>
+                        </Button>
+                        <TextBlock Text="Associated Customers: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="18,125,0,0" Width="145" TextAlignment="Right" Grid.Column="2"/>
+                        <ListBox x:Name="txtAssociatedCustomers" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="75" Width="240" Margin="163,120,0,0"  Grid.Column="2"/>
+
+                        <Grid x:Name="controlProgramPopup" Background="DarkGray" VerticalAlignment="Top" HorizontalAlignment="Center" Width="330" Height="80" Grid.Column="2" Margin="0,52,0,0" Visibility="Hidden">
+                            <TextBlock Text="Filter by Control Program Group" FontSize="15" FontWeight="Bold" FontFamily="Helvetica" TextAlignment="Center" Margin="10"/>
+                            <ComboBox x:Name="comboProgramGroup" Background="White" Width="200" HorizontalAlignment="Left" Margin="10,15,10,0" >
+
+                            </ComboBox>
+
+                            <Button HorizontalAlignment="Left" Margin="218,24,0,8" Height="25" Click="btnOkPopUp">
+                                <materialdesign:PackIcon Kind="Check"/>
+                            </Button>
+                            <Button HorizontalAlignment="Left" Margin="270,24,0,8" Height="25" Background="Red" BorderThickness="0" Click="btnClosePopUp">
+                                <materialdesign:PackIcon Kind="Close"/>
+                            </Button>
+                        </Grid>
+
+                        <Grid x:Name="assocCustomerGrid" Background="DarkGray" VerticalAlignment="Top" HorizontalAlignment="Center" Width="330" Height="80" Grid.Column="2" Margin="0,52,0,0" Visibility="Hidden">
+                            <TextBlock Text="Filter by Associated Customer Group" FontSize="15" FontWeight="Bold" FontFamily="Helvetica" TextAlignment="Center" Margin="10"/>
+                            <ComboBox x:Name="assocCustomer" Background="White" Width="200" HorizontalAlignment="Left" Margin="10,15,10,0" >
+
+                            </ComboBox>
+
+                            <Button HorizontalAlignment="Left" Margin="218,24,0,8" Height="25" Click="btnOKAssocCustomer" >
+                                <materialdesign:PackIcon Kind="Check"/>
+                            </Button>
+                            <Button  HorizontalAlignment="Left" Margin="270,24,0,8" Height="25" Background="Red" BorderThickness="0" Click="btnCloseAssoc">
+                                <materialdesign:PackIcon Kind="Close"/>
+                            </Button>
+                        </Grid>
+                        <!-- REVISION -->
+                        <TextBlock Grid.Column="3" Text="Revision: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="5,15,0,0" Width="80" TextAlignment="Right"/>
+                        <TextBox x:Name="txtRevision" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="180" Margin="90,10,0,0" IsReadOnly="True" Grid.ColumnSpan="3" />
+
+                        <!-- LAST MODIFIED -->
+                        <TextBlock Grid.Column="3" Text="Last Modified: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="5,50,0,0" Width="80" TextAlignment="Right"/>
+                        <TextBox x:Name="txtLastModified" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="180" Margin="90,45,0,0" IsReadOnly="True" Grid.ColumnSpan="3" />
+
+                        <!-- FILE SIZE -->
+                        <TextBlock Grid.Column="3" Text="File Size: " VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Foreground="White" Margin="5,85,0,0" Width="80" TextAlignment="Right"/>
+                        <TextBox x:Name="txtFileSize" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Top" Background="AliceBlue" Height="25" Width="180" Margin="90,80,0,0" IsReadOnly="True" Grid.ColumnSpan="3" />
+                    </Grid>
+
+
+
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Row="2" Grid.Column="0" Grid.RowSpan="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="120"/>
+                        <RowDefinition Height="120" />
+                    </Grid.RowDefinitions>
+                    <!-- TOP VIEW OF FILE-->
+                    <TextBlock Text="Top View of File" Foreground="White" FontFamily="Helvetica" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <TextBox x:Name="txtTopViewOfFile"  Background="AliceBlue" Margin="5,20,5,5" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MouseDoubleClick="txtTopViewOfFile_DoubleClick" />
+                    <!-- BOTTOM VIEW OF FILE-->
+                    <TextBlock Grid.Row="1"  Text="Bottom View of File" Foreground="White" FontFamily="Helvetica" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <TextBox x:Name="txtBottomViewOfFile" Grid.Row="1" Background="AliceBlue" Margin="5,15,5,5" VerticalScrollBarVisibility="Auto" MouseDoubleClick="txtBottomViewOfFile_DoubleClick" />
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Column="1" Grid.Row="2" Grid.RowSpan="2">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Notes" Foreground="White" VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Margin="5,5"/>
+                    <RichTextBox Background="White" Margin="5,20,5,5" VerticalAlignment="Top" HorizontalAlignment="Left" Height="215"/>
+
+                    <TextBlock Grid.Column="1" Text="Description" Foreground="White" VerticalAlignment="Top" HorizontalAlignment="Left" FontFamily="Helvetica" Margin="5,5"/>
+                    <RichTextBox Grid.Column="1" Background="White" Margin="5,20,5,5" VerticalAlignment="Top" HorizontalAlignment="Left" Height="215" Width="310"/>
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+                <TextBlock Text="Search" FontFamily="Helvetica" FontSize="15" Foreground="white" Margin="70,15,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox x:Name="txtSearch" Background="White" VerticalAlignment="Top" HorizontalAlignment="Left" Width="700" Margin="120,10,0,0" FontWeight="Bold" KeyDown="searchKeyDown"/>
+                <Button VerticalAlignment="Top" HorizontalAlignment="Left" Margin="825 10 0 0" Width="45" Height="25" Click="btnSearch" Style="{StaticResource MaterialDesignFlatDarkBgButton}">
+                    <materialdesign:PackIcon Kind="Search"/>
+                </Button>
+                <Button VerticalAlignment="Top" HorizontalAlignment="Left" Margin="875 10 0 0" Width="50" Height="25" Background="#FFC30F0F" BorderThickness="0" Click="btnClear">
+                    <materialdesign:PackIcon Kind="Clear"/>
+                </Button>
+                <StackPanel Width="auto" Height="17" VerticalAlignment="Top" Margin="130,45,10,0" Orientation="Horizontal">
+                    <CheckBox x:Name="chkBoxRemoteRequestId" VerticalAlignment="Top" FontSize="10"  Foreground="White" Unchecked="remoteRequestId_Unchecked" Checked="remoteRequestId_Checked" >Remote Request Id</CheckBox>
+                    <CheckBox x:Name="chkBoxRemoteReferenceId" VerticalAlignment="Top" FontSize="10"  Margin="20,0,0,0" Foreground="White" Unchecked="remoteReferenceId_Unchecked" Checked="referenceId_Checked">Remote Reference Id</CheckBox>
+                    <CheckBox x:Name="chkBoxControlProgramGroup" FontSize="10" VerticalAlignment="Top" Margin="20,0,0,0" Foreground="White" Unchecked="controlProgramGroup_Unchecked" Checked="controlProgram_Checked">Control Progam Group</CheckBox>
+                    <CheckBox x:Name="chkBoxAssociatedCustomer" VerticalAlignment="Top" FontSize="10" Margin="25,0,0,0"  Foreground="White" Unchecked="associatedCustomer_Unchecked" Checked="assocCustomer_Checked">Associated Customers</CheckBox>
+                    <CheckBox x:Name="chkBoxFilename" FontSize="10" VerticalAlignment="Top" Margin="20,0,0,0"  Foreground="White" Unchecked="filename_Unchecked" Checked="filename_Checked">Filename</CheckBox>
+                    <CheckBox x:Name="chkBoxDescription" VerticalAlignment="Top" FontSize="10" Margin="25,0,0,0"  Foreground="White" Unchecked="description_Unchecked" Checked="description_Checked">Description</CheckBox>
+                </StackPanel>
+            </Grid>
+
+
+        </Grid>
+    </ScrollViewer>
+</UserControl>
