@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,9 +28,10 @@ namespace Fusion_PDO
         public MainWindow()
         {
             InitializeComponent();
+            
 
             var SetUp = new List<SubMenu>();
-            SetUp.Add(new SubMenu("Licence", new LicenceItem()));
+            SetUp.Add(new SubMenu("Licence"));
             SetUp.Add(new SubMenu("Application"));
             SetUp.Add(new SubMenu("Service"));
             SetUp.Add(new SubMenu("DNC Events"));
@@ -53,8 +54,8 @@ namespace Fusion_PDO
             var item4 = new Menus("Machines", menuMachines, PackIconKind.StateMachine);
 
             var menuControlPrograms = new List<SubMenu>();
-            
             menuControlPrograms.Add(new SubMenu("Navigator", new ControlProgramNavigator2()));
+            menuControlPrograms.Add(new SubMenu("Try Responsive UI", new sample()));
             var item5 = new Menus("Control Programs", menuControlPrograms, PackIconKind.SettingsApplications);
 
             Menu.Children.Add(new UserControlMenuItem(item1, this));
@@ -95,84 +96,12 @@ namespace Fusion_PDO
         }
 
         db connect = new db();
-        public List<string> myList = new List<string>();
-
-        //temporary connection
-        private string _server;
-        private string _database;
-        private string _username;
-        private string _password;
-        private string _decryptedPassword;
-        void LoadDataFromFile()
-        {
-            try
-            {
-                string filePath = ConfigurationManager.AppSettings.Get("connString");
-                using (var streamReader = new StreamReader(filePath, Encoding.UTF8))
-                {
-                    string line;
-                    while ((line = streamReader.ReadLine()) != null)
-                    {
-                        myList.Add(line);
-                    }
-                    _server = myList[0].ToString();
-                    _database = myList[1].ToString();
-                    _username = myList[2].ToString();
-                    _password = myList[3].ToString();
-                    _decryptedPassword = Decrypt(_password);
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show("No connection.", e.ToString());
-            }
-        }
-
-        //DECRYPT FUNCTION
-        public string Decrypt(string strToDecrypt)
-        {
-            string res = string.Empty;
-            try
-            {
-                string result = "";
-                string dec = strToDecrypt;
-                int i;
-
-                for (i = 0; i < dec.Length - 1; i += 4)
-                {
-                    res = dec.Substring(i, 4);
-                    result += Convert.ToChar(Convert.ToInt32(res, 16) / 114);
-                }
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                ex.ToString();
-            }
-            return res;
-        }
+        
 
         //MAIN WINDOW LOADED FUNCTION
         private void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
-            LoadDataFromFile();
-            connect.server = _server;
-            connect.database = _database;
-            connect.username = _username;
-            connect.password = _decryptedPassword;
             connect.getData();
-            try
-            {
-                connect.conn.Open();
-                //MessageBox.Show("Connected" + connect.password.ToString());
-                connect.conn.Close();
-            }
-            catch (Exception ee)
-            {
-                MessageBox.Show("Not connected" + ee.ToString());
-                Application.Current.Shutdown();
-            }
         }
         bool MenuClosed = false;
         private void Button_Click(object sender, RoutedEventArgs e)
