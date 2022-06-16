@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +19,7 @@ using System.IO;
 using System.ComponentModel;
 using System.Threading;
 using System.Diagnostics;
-
+using Fusion_PDO.Class;
 namespace Fusion_PDO
 {
     /// <summary>
@@ -48,27 +48,12 @@ namespace Fusion_PDO
             dgProgramFiles.IsEnabled = false;
         }
 
-        string connectionString = null;
+        
         SqlConnection conn;
-
+        db connect = new db();
         public void LoadDB()
         {
-
-            connectionString = "Data Source=DESKTOP-KLRS7LV\\FUSION;Initial Catalog=Fusion_Database;User ID=FusionTester;Password=FusionTester1";
-            conn = new SqlConnection(connectionString);
-            try
-            {
-                conn.Open();
-                // MessageBox.Show("Connection Open ! ");
-                conn.Close();
-
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Can not open connection ! " + ex.ToString());
-                Application.Current.Shutdown();
-            }
+            connect.getData();
         }
 
 
@@ -80,22 +65,33 @@ namespace Fusion_PDO
             try
             {
 
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] ORDER BY filename ASC", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] ORDER BY filename ASC", connect.conn);
+                connect.conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 dt.Load(reader);
                 lblList.Text = "Showing List by Control Program(s)";
+                if (dt.Rows.Count > 0)
+                {
 
+                    return dt;
+                }
+                else
+                {
+                    labelNoData.Visibility = Visibility.Visible;
+                    dgProgramFiles.IsEnabled = false;
+                    
+                }
+                reader.Close();
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.ToString());
+                ex.ToString();
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
             return dt;
         }
@@ -153,38 +149,53 @@ namespace Fusion_PDO
             try
             {
                 string id = GetDataDG().Rows[0]["id"].ToString();
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + id + "  ORDER BY filename ASC", conn);
-                conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
+                if (id != "")
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + id + "  ORDER BY filename ASC", connect.conn);
+                    connect.conn.Open();
+                    SqlDataReader reader = cmd.ExecuteReader();
 
-                reader.Read();
+                    if (reader.Read())
+                    {
+                        txtPath.Text = reader["programPointer"].ToString();
+                        txtReferenceId.Text = reader["UniqueReference"].ToString();
+                        txtRemoteRequestId.Text = reader["remoteCallId"].ToString();
 
-                txtPath.Text = reader[8].ToString();
-                txtReferenceId.Text = reader[1].ToString();
-                txtRemoteRequestId.Text = reader[2].ToString();
+                        string filePath = reader["programPointer"].ToString();
+                        long fileSize = GetFileSize(filePath); //filesize of actual file
+                        txtFileSize.Text = fileSize.ToString() + " bytes";
 
-                string filePath = reader[3].ToString();
+                        DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                        txtLastModified.Text = modification.ToString();
 
-                long fileSize = GetFileSize(filePath); //filesize of actual file
-                txtFileSize.Text = fileSize.ToString() + " bytes";
+                        byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                        txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
 
-                DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
-                txtLastModified.Text = modification.ToString();
+                        txtControlProgramGroup.Text = reader["machine_group_name"].ToString();
 
-               
-                txtControlProgramGroup.Text = reader["machine_group_name"].ToString();
-                //txtAssociatedCustomers.Items.Add(reader["custName"].ToString());
+                       
+                        reader.Close();
+                        connect.conn.Close();
+                    }
+
+                }
+                else
+                {
+                    txtPath.Text = "";
+                    txtReferenceId.Text = "";
+                    txtRemoteRequestId.Text = "";
+                    txtLastModified.Text = "";
+                    txtTopViewOfFile.Text = "";
+                    txtControlProgramGroup.Text = "";
+                }
+
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.ToString());
+                ex.ToString();
             }
-            finally
-            {
-                conn.Close();
-            }
+           
         }
-
 
         //FUNCTION TO GET THE FILESIZE FROM ACTUAL FILE
         static long GetFileSize(string FilePath)
@@ -196,6 +207,7 @@ namespace Fusion_PDO
             return 0;
         }
 
+        //CONTROL PROGRAM VIEW
         private void btnControlProgram(object sender, RoutedEventArgs e)
         {
             lblList.Text = "Showing List by Control Program(s)";
@@ -205,8 +217,9 @@ namespace Fusion_PDO
             dgProgramFiles.Visibility = Visibility.Visible;
             dgReferenceId.Visibility = Visibility.Hidden;
             dgRemoteRequestId.Visibility = Visibility.Hidden;
-        }
+        } 
 
+        //REFERENCE ID VIEW
         private void btnReferenceId(object sender, RoutedEventArgs e)
         {
             lblList.Text = "Showing List by Reference ID(s)";
@@ -216,6 +229,7 @@ namespace Fusion_PDO
             dgRemoteRequestId.Visibility = Visibility.Hidden;
         }
 
+        //REMOTE REQUEST ID VIEW
         private void btnRemoteRequestId(object sender, RoutedEventArgs e)
         {
             lblList.Text = "Showing List by Remote Request ID(s)";
@@ -231,20 +245,20 @@ namespace Fusion_PDO
             try
             {
 
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] ORDER BY filename ASC", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] ORDER BY filename ASC", connect.conn);
+                connect.conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 dt.Load(reader);
-
+                reader.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.ToString());
+                ex.ToString();
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
             return dt;
         }
@@ -255,20 +269,20 @@ namespace Fusion_PDO
             try
             {
 
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] ORDER BY filename ASC", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] ORDER BY filename ASC", connect.conn);
+                connect.conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
                 dt.Load(reader);
-
+                reader.Close();
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.ToString());
+                ex.ToString();
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
             return dt;
         }
@@ -279,7 +293,7 @@ namespace Fusion_PDO
             string search_value = txtSearch.Text;
             if (search_value == "")
             {
-
+                MessageBox.Show("Please input necessary search term first.", "Control Program Navigator", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
@@ -291,9 +305,9 @@ namespace Fusion_PDO
         //SEARCH FUNCTION
         private void Search()
         {
-            
+
             string search_value = txtSearch.Text;
-            string query = "SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id  WHERE NCPROG.id LIKE '%" + search_value + "%' ";
+            string query = "SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id  WHERE NCPROG.id LIKE '%" + search_value + "%' ";
 
             if (chkBoxFilename.IsChecked == true)
             {
@@ -351,32 +365,38 @@ namespace Fusion_PDO
                 txtSearch.IsEnabled = true;
 
             }
-            
+
             DataTable dt = new DataTable();
             try
             {
-                SqlCommand cmd = new SqlCommand(query.ToString(), conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand(query.ToString(), connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
-
                     dgProgramFiles.ItemsSource = dt.DefaultView;
                     dgReferenceId.ItemsSource = dt.DefaultView;
                     dgRemoteRequestId.ItemsSource = dt.DefaultView;
                     dgProgramFiles.SelectedIndex = 0;
                     dgProgramFiles.Focus();
 
-                    txtPath.Text = dt.Rows[0][8].ToString();
-                    txtReferenceId.Text = dt.Rows[0][1].ToString();
-                    txtRemoteRequestId.Text = dt.Rows[0][2].ToString();
-                    txtLastModified.Text = dt.Rows[0][7].ToString();
-                    string filePath = dt.Rows[0][8].ToString();
+                    txtPath.Text = dt.Rows[0]["programPointer"].ToString();
+                    txtReferenceId.Text = dt.Rows[0]["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = dt.Rows[0]["remoteCallId"].ToString();
+
+                    string filePath = dt.Rows[0]["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
+
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
+                    txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
+
                     //txtAssociatedCustomers.Text = dt.Rows[0]["custName"].ToString();
                     lblList.Text = "Showing List by Control Program(s) result for " + search_value.ToUpper() + " search.";
                 }
@@ -387,11 +407,11 @@ namespace Fusion_PDO
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.ToString());
+                ex.ToString();
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -420,30 +440,26 @@ namespace Fusion_PDO
                 else
                 {
 
-                    SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] WHERE id = " + condition + "  ORDER BY filename ASC", conn);
-                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] WHERE id = " + condition + "  ORDER BY filename ASC", connect.conn);
+                    connect.conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     reader.Read();
 
-                    txtPath.Text = reader[8].ToString();
-                    txtReferenceId.Text = reader[1].ToString();
-                    txtRemoteRequestId.Text = reader[2].ToString();
-                    txtLastModified.Text = reader[7].ToString();
-                    string filePath = reader[8].ToString();
+                    txtPath.Text = reader["programPointer"].ToString();
+                    txtReferenceId.Text = reader["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = reader["remoteCallId"].ToString();
+
+                    string filePath = reader["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    const int MAX_BUFFER = 512;
-                    byte[] Buffer = new byte[MAX_BUFFER];
-                    int BytesRead;
-                    using (System.IO.FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                        while ((BytesRead = fileStream.Read(Buffer, 0, MAX_BUFFER)) != 0)
-                        {
-                            string text = Encoding.UTF8.GetString(Buffer);
-                            txtTopViewOfFile.Text = text.ToString();
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
 
-                        }
+                    txtControlProgramGroup.Text = reader["machine_group_name"].ToString();
+
+                    reader.Close();
                 }
             }
             catch (NullReferenceException ex)
@@ -452,7 +468,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -470,31 +486,25 @@ namespace Fusion_PDO
                 else
                 {
 
-                    SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] WHERE id = " + condition + "  ORDER BY filename ASC", conn);
-                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] WHERE id = " + condition + "  ORDER BY filename ASC", connect.conn);
+                    connect.conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     reader.Read();
+                    txtPath.Text = reader["programPointer"].ToString();
+                    txtReferenceId.Text = reader["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = reader["remoteCallId"].ToString();
 
-                    txtPath.Text = reader[8].ToString();
-                    txtReferenceId.Text = reader[1].ToString();
-                    txtRemoteRequestId.Text = reader[2].ToString();
-                    txtLastModified.Text = reader[7].ToString();
-                    string filePath = reader[8].ToString();
+                    string filePath = reader["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    const int MAX_BUFFER = 512;
-                    byte[] Buffer = new byte[MAX_BUFFER];
-                    int BytesRead;
-                    using (System.IO.FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                        while ((BytesRead = fileStream.Read(Buffer, 0, MAX_BUFFER)) != 0)
-                        {
-                            string text = Encoding.UTF8.GetString(Buffer);
-                            txtTopViewOfFile.Text = text.ToString();
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
 
-                        }
                     txtControlProgramGroup.Text = reader["machine_group_name"].ToString();
+
+                    reader.Close();
                 }
             }
             catch (NullReferenceException ex)
@@ -503,7 +513,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -522,16 +532,17 @@ namespace Fusion_PDO
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[Machine_Groups]", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [Machine_Groups]", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 DataSet ds = new DataSet();
                 da.Fill(ds);
                 comboBoxName.ItemsSource = ds.Tables[0].DefaultView;
-                comboBoxName.DisplayMemberPath = ds.Tables[0].Columns[1].ToString();
-                comboBoxName.SelectedValuePath = ds.Tables[0].Columns[0].ToString();
+                comboBoxName.DisplayMemberPath = ds.Tables[0].Columns["machine_group_name"].ToString();
+                comboBoxName.SelectedValuePath = ds.Tables[0].Columns["machine_group_id"].ToString();
                 //comboBoxName.Text = ds.Tables[0].Columns[1].ToStrin g();
                 comboBoxName.SelectedIndex = 0;
+                da.Dispose();
             }
             catch (Exception ex)
             {
@@ -539,7 +550,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
 
         }
@@ -550,16 +561,17 @@ namespace Fusion_PDO
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[CUSTOMERS]", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [CUSTOMERS]", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 DataSet ds = new DataSet();
                 da.Fill(ds);
                 comboBoxName2.ItemsSource = ds.Tables[0].DefaultView;
-                comboBoxName2.DisplayMemberPath = ds.Tables[0].Columns[1].ToString();
-                comboBoxName2.SelectedValuePath = ds.Tables[0].Columns[0].ToString();
+                comboBoxName2.DisplayMemberPath = ds.Tables[0].Columns["customer_name"].ToString();
+                comboBoxName2.SelectedValuePath = ds.Tables[0].Columns["customer_id"].ToString();
                 //comboBoxName.Text = ds.Tables[0].Columns[1].ToStrin g();
                 comboBoxName2.SelectedIndex = 0;
+                da.Dispose();
             }
             catch (Exception ex)
             {
@@ -567,7 +579,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
 
         }
@@ -591,8 +603,8 @@ namespace Fusion_PDO
             DataTable dt = new DataTable();
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id  WHERE fkMachGroupId = " + mach_id + " ", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id  WHERE fkMachGroupId = " + mach_id + " ", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
@@ -601,21 +613,23 @@ namespace Fusion_PDO
                     dgProgramFiles.ItemsSource = dt.DefaultView;
                     dgReferenceId.ItemsSource = dt.DefaultView;
                     dgRemoteRequestId.ItemsSource = dt.DefaultView;
+                    dgProgramFiles.SelectedIndex = 0;
+                    dgProgramFiles.Focus();
 
-                    txtPath.Text = dt.Rows[0][8].ToString();
-                    txtReferenceId.Text = dt.Rows[0][1].ToString();
-                    txtRemoteRequestId.Text = dt.Rows[0][2].ToString();
-                    txtLastModified.Text = dt.Rows[0][7].ToString();
-                    string filePath = dt.Rows[0][8].ToString();
+                    txtPath.Text = dt.Rows[0]["programPointer"].ToString();
+                    txtReferenceId.Text = dt.Rows[0]["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = dt.Rows[0]["remoteCallId"].ToString();
+
+                    string filePath = dt.Rows[0]["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    var bytes = File.ReadAllBytes(filePath);
-                    var text = Encoding.UTF8.GetString(bytes);
-                    txtTopViewOfFile.Text = text.ToString();
-                    txtBottomViewOfFile.Text = text.ToString();
-                    txtBottomViewOfFile.ScrollToEnd();
-                    //txtAssociatedCustomers.Text = dt.Rows[0]["custName"].ToString();
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
+
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
                     txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
                 }
                 else
@@ -630,7 +644,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -721,19 +735,19 @@ namespace Fusion_PDO
         {
             assocCustomerGrid.Visibility = Visibility.Hidden;
             btnAssocCustomer.IsEnabled = true;
-            
+
             string assoc_id = assocCustomer.SelectedValue.ToString();
             string assoc_name = assocCustomer.Text;
             DataTable dt = new DataTable();
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id INNER JOIN [Fusion_Database].[dbo].[CtrlProgCustMGAssoc] ON NCPROG.UniqueReference=urid INNER JOIN [Fusion_Database].[dbo].[CUSTOMERS]  ON CtrlProgCustMGAssoc.custid=customer_id  WHERE customer_id = " + assoc_id + " ", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id INNER JOIN [CtrlProgCustMGAssoc] ON NCPROG.UniqueReference=urid INNER JOIN [CUSTOMERS]  ON CtrlProgCustMGAssoc.custid=customer_id  WHERE customer_id = " + assoc_id + " ", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
-                    
+
                     dgProgramFiles.ItemsSource = dt.DefaultView;
                     dgReferenceId.ItemsSource = dt.DefaultView;
                     dgRemoteRequestId.ItemsSource = dt.DefaultView;
@@ -752,6 +766,9 @@ namespace Fusion_PDO
                     txtBottomViewOfFile.Text = text.ToString();
                     txtBottomViewOfFile.ScrollToEnd();
 
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
                     txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
                     //txtAssociatedCustomers.Text = dt.Rows[0]["custName"].ToString();
                 }
@@ -767,7 +784,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -776,7 +793,7 @@ namespace Fusion_PDO
             assocCustomerGrid.Visibility = Visibility.Hidden;
             //comboProgramGroup.Items.Clear();
             btnAssocCustomer.IsEnabled = true;
-           // btnCancel.Visibility = Visibility.Hidden;
+            // btnCancel.Visibility = Visibility.Hidden;
         }
 
         private void btnAssocCustomer_Click(object sender, RoutedEventArgs e)
@@ -784,12 +801,12 @@ namespace Fusion_PDO
             controlProgramPopup.Visibility = Visibility.Hidden;
             assocCustomerGrid.Visibility = Visibility.Visible;
             btnAssocCustomer.IsEnabled = false;
-            
+
         }
 
         private void dgProgramFiles_rightClick(object sender, MouseButtonEventArgs e)
         {
-            
+
             DataGrid dataGrid = sender as DataGrid;
             DataRowView row = dataGrid.SelectedItem as DataRowView;
             //string myCellValue = rowView.Row[0].ToString();
@@ -799,34 +816,38 @@ namespace Fusion_PDO
             DataTable dt = new DataTable();
             try
             {
-                
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", conn);
+
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", connect.conn);
                 conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
+                    txtPath.Text = dt.Rows[0]["programPointer"].ToString();
+                    txtReferenceId.Text = dt.Rows[0]["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = dt.Rows[0]["remoteCallId"].ToString();
 
-                    txtPath.Text = dt.Rows[0][8].ToString();
-                    txtReferenceId.Text = dt.Rows[0][1].ToString();
-                    txtRemoteRequestId.Text = dt.Rows[0][2].ToString();
-                    txtLastModified.Text = dt.Rows[0][7].ToString();
-                    string filePath = dt.Rows[0][8].ToString();
+                    string filePath = dt.Rows[0]["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    var bytes = File.ReadAllBytes(filePath);
-                    var text = Encoding.UTF8.GetString(bytes);
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
 
-                    //txtTopViewOfFile.Text = text.ToString();
-                    //txtBottomViewOfFile.Text = text.ToString();
-                    // txtBottomViewOfFile.ScrollToEnd();
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
                     txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
-                    //txtAssociatedCustomers.Items.Add(dt.Rows[0]["custName"].ToString());
                 }
                 else
                 {
+                    txtPath.Text = "";
+                    txtReferenceId.Text = "";
+                    txtRemoteRequestId.Text = "";
+                    txtFileSize.Text = "";
+                    txtLastModified.Text = "";
 
+                    txtControlProgramGroup.Text = "";
                 }
             }
             catch (Exception ex)
@@ -835,7 +856,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -850,30 +871,37 @@ namespace Fusion_PDO
             DataTable dt = new DataTable();
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
+                    txtPath.Text = dt.Rows[0]["programPointer"].ToString();
+                    txtReferenceId.Text = dt.Rows[0]["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = dt.Rows[0]["remoteCallId"].ToString();
 
-                    txtPath.Text = dt.Rows[0][8].ToString();
-                    txtReferenceId.Text = dt.Rows[0][1].ToString();
-                    txtRemoteRequestId.Text = dt.Rows[0][2].ToString();
-                    txtLastModified.Text = dt.Rows[0][7].ToString();
-                    string filePath = dt.Rows[0][8].ToString();
+                    string filePath = dt.Rows[0]["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    var bytes = File.ReadAllBytes(filePath);
-                    var text = Encoding.UTF8.GetString(bytes);
-                    
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
+
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
                     txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
-                    //txtAssociatedCustomers.Items.Add(dt.Rows[0]["custName"].ToString());
                 }
                 else
                 {
+                    txtPath.Text = "";
+                    txtReferenceId.Text = "";
+                    txtRemoteRequestId.Text = "";
+                    txtFileSize.Text = "";
+                    txtLastModified.Text = "";
 
+                    txtControlProgramGroup.Text = "";
                 }
             }
             catch (Exception ex)
@@ -882,7 +910,7 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
         }
 
@@ -911,36 +939,39 @@ namespace Fusion_PDO
             DataTable dt = new DataTable();
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", conn);
-                conn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", connect.conn);
+                connect.conn.Open();
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
+                    txtPath.Text = dt.Rows[0]["programPointer"].ToString();
+                    txtReferenceId.Text = dt.Rows[0]["UniqueReference"].ToString();
+                    txtRemoteRequestId.Text = dt.Rows[0]["remoteCallId"].ToString();
 
-                    txtPath.Text = dt.Rows[0][8].ToString();
-                    txtReferenceId.Text = dt.Rows[0][1].ToString();
-                    txtRemoteRequestId.Text = dt.Rows[0][2].ToString();
-                    txtLastModified.Text = dt.Rows[0][7].ToString();
-                    string filePath = dt.Rows[0][8].ToString();
+                    string filePath = dt.Rows[0]["programPointer"].ToString();
                     long fileSizeinBytes = GetFileSize(filePath);
                     txtFileSize.Text = fileSizeinBytes.ToString() + " bytes";
 
-                    var bytes = File.ReadAllBytes(filePath);
-                    var text = Encoding.UTF8.GetString(bytes);
+                    DateTime modification = File.GetLastWriteTime(filePath); //last modification date of actual file
+                    txtLastModified.Text = modification.ToString();
 
-                    //txtTopViewOfFile.Text = text.ToString();
-                    //txtBottomViewOfFile.Text = text.ToString();
-                    // txtBottomViewOfFile.ScrollToEnd();
+                    byte[] test = File.ReadAllBytes(filePath).Skip(0).Take(512).ToArray();
+                    txtTopViewOfFile.Text = Encoding.UTF8.GetString(test);
+
                     txtControlProgramGroup.Text = dt.Rows[0]["machine_group_name"].ToString();
-                    //txtAssociatedCustomers.Items.Add(dt.Rows[0]["custName"].ToString());
-                    //dgProgramFiles.ItemsSource = new DirectoryInfo(txtPath.Text).GetFiles();
                     Process.Start("notepad.exe", txtPath.Text);
 
                 }
                 else
                 {
+                    txtPath.Text = "";
+                    txtReferenceId.Text = "";
+                    txtRemoteRequestId.Text = "";
+                    txtFileSize.Text = "";
+                    txtLastModified.Text = "";
 
+                    txtControlProgramGroup.Text = "";
                 }
             }
             catch (Exception ex)
@@ -949,9 +980,9 @@ namespace Fusion_PDO
             }
             finally
             {
-                conn.Close();
+                connect.conn.Close();
             }
-            
+
         }
 
         private void txtTopViewOfFile_DoubleClick(object sender, MouseButtonEventArgs e)
@@ -977,8 +1008,8 @@ namespace Fusion_PDO
                 DataTable dt = new DataTable();
                 try
                 {
-                    SqlCommand cmd = new SqlCommand("SELECT * from [Fusion_Database].[dbo].[NCPROG] INNER JOIN [Fusion_Database].[dbo].[Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", conn);
-                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT * from [NCPROG] INNER JOIN [Machine_Groups] ON NCPROG.fkMachGroupId=machine_group_id WHERE NCPROG.id = " + condition + " ", connect.conn);
+                    connect.conn.Open();
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
                     da.Fill(dt);
                     if (dt.Rows.Count > 0)
@@ -1031,7 +1062,7 @@ namespace Fusion_PDO
                 }
                 finally
                 {
-                    conn.Close();
+                    connect.conn.Close();
                 }
             }
         }
@@ -1043,4 +1074,3 @@ namespace Fusion_PDO
         }
     }
 }
-
