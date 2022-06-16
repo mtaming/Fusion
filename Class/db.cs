@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +8,9 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Windows;
 using System.Configuration;
+using Fusion_PDO.Properties;
+using System.Reflection;
+
 namespace Fusion_PDO.Class
 {
     class db
@@ -35,33 +38,53 @@ namespace Fusion_PDO.Class
         public void getData()
         {
 
-            // decryptedPassword = Decrypt(password);
             LoadDataFromFile();
-            connectionString = "Data Source=" + server + ";Initial Catalog=" + database + ";User ID=" + username + ";Password=" + _decryptedPassword;
+            connectionString = "Data Source=" + _server + ";Initial Catalog=" + _database + ";User ID=" + _username + ";Password=" + _decryptedPassword;
             conn = new SqlConnection(connectionString);
+            try
+            {
+                conn.Open();
+                Settings.Default["connString"] = connectionString;
+                Settings.Default.Save();
+                conn.Close();
+            }
+            catch (Exception ee)
+            {
+                MessageBox.Show("Cannot establish database connection.\n\n" + ee.Message, "Database Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                //Application.Current.Shutdown();
+            }
         }
         public void LoadDataFromFile()
         {
             try
             {
-                string filePath = ConfigurationManager.AppSettings.Get("connString");
-                using (var streamReader = new StreamReader(filePath, Encoding.UTF8))
+                string pathSource = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                string filePath = pathSource + @"\Nexas America\db.ini";
+                if (File.Exists(filePath))
                 {
-                    string line;
-                    while ((line = streamReader.ReadLine()) != null)
+                    using (var streamReader = new StreamReader(filePath, Encoding.UTF8))
                     {
-                        myList.Add(line);
+                        string line;
+                        while ((line = streamReader.ReadLine()) != null)
+                        {
+                            myList.Add(line);
+                        }
+                        _server = myList[0].ToString();
+                        _database = myList[1].ToString();
+                        _username = myList[2].ToString();
+                        _password = myList[3].ToString();
+                        _decryptedPassword = Decrypt(_password);
                     }
-                    _server = myList[0].ToString();
-                    _database = myList[1].ToString();
-                    _username = myList[2].ToString();
-                    _password = myList[3].ToString();
-                    _decryptedPassword = Decrypt(_password);
+                }
+                else
+                {
+                    MessageBox.Show("Cannot find configuration file.\n\n Setup Database first.", "Fusion", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Application.Current.Shutdown();
                 }
             }
             catch (Exception e)
             {
-                MessageBox.Show("No connection.", e.ToString());
+                MessageBox.Show("Error while getting file.\n\n" + e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
